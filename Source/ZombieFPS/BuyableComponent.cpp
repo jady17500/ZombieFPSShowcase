@@ -42,10 +42,10 @@ void UBuyableComponent::Buy(UCurrencyComponent* CurrencyComponent)
 	if (CurrencyComponent->SpendCurrency(Price))
 	{
 		OnBuyComplete.Broadcast();
+		if (bHasLimitedBuyCount)
+			BuyCount--;
 		if (BuyCount == 0)
 			OnBuyLimitReached.Broadcast();
-		else if (bHasLimitedBuyCount)
-			BuyCount--;
 	}
 }
 

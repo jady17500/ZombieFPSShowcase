@@ -26,5 +26,11 @@ public:
 	void Interact(AActor* Interactor);
 	
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void InteractOngoing(AActor* Interactor);
+	
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void InteractOver(AActor* Interactor);
+	
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	bool GetInteractText(FText &OutText, FText &OutDescription);
 };

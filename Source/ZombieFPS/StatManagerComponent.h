@@ -62,5 +62,7 @@ public:
 	void IncreaseStatPercentageForDuration(FName StatName,float Percentage, bool UseBaseStat, float Duration, float &OutStat);
 
 	UFUNCTION(BlueprintCallable)
-	void ResetStatToPreviousValue(FName StatName, float PreviousValue);	
+	void ResetStatToPreviousValue(FName StatName, float PreviousValue);
+	
+	
 };

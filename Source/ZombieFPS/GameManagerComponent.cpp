@@ -3,6 +3,8 @@
 
 #include "GameManagerComponent.h"
 #include "HealthComponent.h"
+#include "SpawnZoneManagerComponent.h"
+#include "ZombieGameState.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 
@@ -21,9 +23,13 @@ UGameManagerComponent::UGameManagerComponent()
 void UGameManagerComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), SpawnPointClass, SpawnPoints);
+	GameState = Cast<AZombieGameState>(UGameplayStatics::GetGameState(GetWorld()));
 	OnEnemyKilled.AddDynamic(this, &UGameManagerComponent::CheckForEnemies);
+	if (!GetOwner()->GetComponentByClass<USpawnZoneManagerComponent>())
+		GetOwner()->AddComponentByClass(USpawnZoneManagerComponent::StaticClass(), false, FTransform::Identity, false);
+
+	SpawnZoneManager = GetOwner()->GetComponentByClass<USpawnZoneManagerComponent>();
+	
 	StartRound();
 	ResetDrops();
 }
@@ -61,13 +67,17 @@ void UGameManagerComponent::StartRound()
 {
 	DropNumber=MaxDropsPerRound;
 	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("Round: %d"), CurrentRound));
-	SpawnEnemy();
+	GameState->CurrentRound = CurrentRound;
 	OnRoundStart.Broadcast(CurrentRound);
+	
+	GameState->Multicast_UpdateCurrentRound();
+	StartSpawning();
 }
 
 void UGameManagerComponent::EndRound()
 {
 	OnRoundEnd.Broadcast(CurrentRound);
+	GameState->Multicast_StartRoundTransition();
 	IncreaseRound();
 	GetWorld()->GetTimerManager().SetTimer(RoundStartTimer,this ,&UGameManagerComponent::StartRound, RoundStartDelay,false);
 }
@@ -83,8 +93,15 @@ void UGameManagerComponent::IncreaseRound()
 void UGameManagerComponent::SpawnEnemy()
 {
 	FActorSpawnParameters SpawnParams;
-	
-	FTransform SpawnTransform = SpawnPoints[FMath::RandRange(0,SpawnPoints.Num()-1)]->GetTransform();
+	AActor* SpawnPointActor= nullptr;
+	FTransform SpawnTransform = FTransform::Identity;
+	if (SpawnZoneManager->GetValidSpawnPoint(SpawnPointActor))
+		SpawnTransform = SpawnPointActor->GetActorTransform();
+	else
+	{
+		SpawnZoneManager->GetSpawnPoint(SpawnPointActor);
+		SpawnTransform = SpawnPointActor->GetActorTransform();
+	}
 	TObjectPtr<AActor> Enemy = GetWorld()->SpawnActor<AActor>(EnemyClass, SpawnTransform);
 		
 	if (EnemyHealth == 0)

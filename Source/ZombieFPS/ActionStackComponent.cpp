@@ -20,6 +20,7 @@ UActionStackComponent::UActionStackComponent()
 void UActionStackComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	
 
 	// ...
 	

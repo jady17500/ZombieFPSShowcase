@@ -2,6 +2,7 @@
 
 
 #include "HealthComponent.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values for this component's properties
 UHealthComponent::UHealthComponent()
@@ -9,7 +10,7 @@ UHealthComponent::UHealthComponent()
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-
+	SetIsReplicated(true);
 	// ...
 }
 
@@ -34,8 +35,10 @@ void UHealthComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 
 void UHealthComponent::SetHealth(int NewHealth)
 {
+	
 	CurrentHealth = NewHealth;
 	CurrentHealth = FMath::Clamp(CurrentHealth, 0, MaxHealth);
+	OnHeathChanged.Broadcast(CurrentHealth);
 }
 
 void UHealthComponent::Heal(int HealAmount)
@@ -50,6 +53,7 @@ void UHealthComponent::Heal(int HealAmount)
 
 void UHealthComponent::Damage(int Damage, AActor* Attacker, EDamageType DamageType)
 {
+	OnPreDamage.Broadcast(Attacker,DamageType,Damage);
 	CurrentHealth -= Damage;
 	GEngine->AddOnScreenDebugMessage(-1,5.0f,FColor::Green,FString::Printf(TEXT("Damage %d"), Damage));
 	CurrentHealth = FMath::Clamp(CurrentHealth, 0, MaxHealth);
@@ -57,14 +61,28 @@ void UHealthComponent::Damage(int Damage, AActor* Attacker, EDamageType DamageTy
 	OnDamageTaken.Broadcast(Attacker, DamageType);
 	
 	if (CurrentHealth <= 0 && !bIsDead)
-		Death(Attacker, DamageType);
+		Server_Death(Attacker, DamageType);
 }
 
-void UHealthComponent::Death(AActor* Killer, EDamageType DamageType)
+void UHealthComponent::Server_Death_Implementation(AActor* Killer, EDamageType DamageType)
 {
-	GEngine->AddOnScreenDebugMessage(-1,5.0f,FColor::Green,TEXT("Death"));
+	GEngine->AddOnScreenDebugMessage(-1,5.0f,FColor::Green,TEXT("Server Death"));
+	Multicast_Death(Killer, DamageType);
+}
+
+void UHealthComponent::Multicast_Death_Implementation(AActor* Killer, EDamageType DamageType)
+{
+	GEngine->AddOnScreenDebugMessage(-1,5.0f,FColor::Green,TEXT("Multicast Death"));
 	if (!bIsDead)
 		OnDeath.Broadcast(Killer, DamageType);
 	bIsDead = true;
+}
+
+void UHealthComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UHealthComponent, CurrentHealth);
+	DOREPLIFETIME(UHealthComponent, MaxHealth);
+	DOREPLIFETIME(UHealthComponent, bIsDead);
 }
 

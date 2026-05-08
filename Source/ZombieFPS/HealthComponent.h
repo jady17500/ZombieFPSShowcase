@@ -10,6 +10,7 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHeathChanged, float, NewHealth);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHeal);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDamageTaken, AActor*, Attacker, EDamageType, DamageType);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnPreDamage, AActor*, Attacker, EDamageType, PreDamageType, int&, Damage);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDeath, AActor*, Killer, EDamageType, DamageType);
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent), Blueprintable, BlueprintType )
 class ZOMBIEFPS_API UHealthComponent : public UActorComponent
@@ -29,17 +30,20 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 			
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	UPROPERTY(Replicated,BlueprintReadWrite)
 	int MaxHealth;
 	
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	UPROPERTY(Replicated,EditAnywhere,BlueprintReadWrite)
 	int CurrentHealth;
 	
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(Replicated,BlueprintReadOnly)
 	bool bIsDead = false;
 	
 	UPROPERTY(BlueprintAssignable)
 	FOnHeal OnHeal;
+	
+	UPROPERTY(BlueprintAssignable)
+	FOnPreDamage OnPreDamage;
 	
 	UPROPERTY(BlueprintAssignable)
 	FOnDamageTaken OnDamageTaken;
@@ -65,6 +69,11 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual void Damage(int Damage, AActor* Attacker, EDamageType DamageType);
 	
-	UFUNCTION(BlueprintCallable)
-	virtual void Death(AActor* Killer, EDamageType DamageType);
+	UFUNCTION(BlueprintCallable, Server, Reliable)
+	virtual void Server_Death(AActor* Killer, EDamageType DamageType);
+	
+	UFUNCTION(BlueprintCallable, NetMulticast, Reliable)
+	virtual void Multicast_Death(AActor* Killer, EDamageType DamageType);
+	
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 };

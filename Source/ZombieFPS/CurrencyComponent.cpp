@@ -3,6 +3,8 @@
 
 #include "CurrencyComponent.h"
 #include "StatManagerComponent.h"
+#include "ZombiePlayerState.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values for this component's properties
 UCurrencyComponent::UCurrencyComponent()
@@ -35,6 +37,9 @@ void UCurrencyComponent::GainCurrency(int Amount)
 	if (bIsCapped)
 		CurrencyAmount = FMath::Clamp(CurrencyAmount, 0, MaxCurrencyAmount);
 	
+	if (Cast<AZombiePlayerState>(UGameplayStatics::GetPlayerState(GetWorld(),0)))
+		Cast<AZombiePlayerState>(UGameplayStatics::GetPlayerState(GetWorld(),0))->PlayerPoints = CurrencyAmount;
+	
 	OnCurrencyGained.Broadcast(Amount*Multiplier, CurrencyAmount);
 }
 
@@ -44,6 +49,9 @@ bool UCurrencyComponent::SpendCurrency(int Amount)
 	{
 		CurrencyAmount -= Amount;
 		OnCurrencySpent.Broadcast(Amount, CurrencyAmount);
+		
+		if (Cast<AZombiePlayerState>(UGameplayStatics::GetPlayerState(GetWorld(),0)))
+			Cast<AZombiePlayerState>(UGameplayStatics::GetPlayerState(GetWorld(),0))->PlayerPoints = CurrencyAmount;
 		return true;
 	}
 	return false;

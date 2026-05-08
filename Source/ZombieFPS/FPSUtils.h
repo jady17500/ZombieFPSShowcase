@@ -1,6 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 #pragma once
 #include "CoreMinimal.h"
+#include "NativeGameplayTags.h"
+
 
 UENUM(BlueprintType)
 enum class FiringMode : uint8 {
@@ -22,6 +24,7 @@ enum class EDamageType : uint8
 	HEADSHOT = 0 UMETA(DisplayName = "Headshot"),
 	BODYSHOT = 1 UMETA(DisplayName = "Bodyshot"),
 	MELEE = 2 UMETA(DisplayName = "Melee"),
+	EXPLOSIVE = 3 UMETA(DisplayName = "Explosive"),
 };
 /**
  * 

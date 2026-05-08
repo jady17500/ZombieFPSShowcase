@@ -9,7 +9,11 @@ void UPlayerHealth::BeginPlay()
 	Super::BeginPlay();
 	OnDamageTaken.AddDynamic(this, &UPlayerHealth::CancelRegeneration);
 	if (bUseStatManager)
+	{
+		StatManager = GetOwner()->GetComponentByClass<UStatManagerComponent>();
 		InitStats();
+		InitBlastResistance();
+	}
 	
 }
 
@@ -27,6 +31,36 @@ void UPlayerHealth::Regenerate()
 		if(GetWorld()->GetTimerManager().IsTimerActive(RegenerationRateTimer))
 			GetWorld()->GetTimerManager().ClearTimer(RegenerationRateTimer);
 }
+
+void UPlayerHealth::BleedOut()
+{
+	GetOwner()->Destroy();
+}
+
+void UPlayerHealth::Server_AddReviveCharges_Implementation(float ReviveCharges)
+{
+	CurrentReviveCharges += ReviveCharges;
+	GEngine->AddOnScreenDebugMessage(-1,5.0f,FColor::Green, FString::Printf(TEXT("Charges %f"), CurrentReviveCharges));
+	if (CurrentReviveCharges >= RequiredReviveCharges)
+	{
+		BleedOutTimer.Invalidate();
+		Multicast_Revive();
+	}
+}
+
+void UPlayerHealth::Multicast_Revive_Implementation()
+{
+	CurrentReviveCharges = 0;
+	bIsDead = false;
+	OnRevive.Broadcast();
+}
+
+void UPlayerHealth::Multicast_Death(AActor* Killer, EDamageType DamageType)
+{
+	Super::Multicast_Death(Killer, DamageType);
+	GetWorld()->GetTimerManager().SetTimer(BleedOutTimer,this, &UPlayerHealth::BleedOut,BleedOutTime,false);
+}
+
 
 void UPlayerHealth::StartRegenerate()
 {
@@ -73,8 +107,8 @@ void UPlayerHealth::InitStats()
 	float OutRegenerationRate;
 	float OutRegenerationTick;
 	float OutRegenerationDelay;
-	UStatManagerComponent* StatManager = GetOwner()->GetComponentByClass<UStatManagerComponent>();
-	if (IsValid(StatManager))
+	
+	if (StatManager.IsValid())
 	{
 		
 		if (StatManager->GetStat(HealthKey, OutHealth))
@@ -101,5 +135,20 @@ void UPlayerHealth::InitStats()
 		StatManager->OnStatChanged.AddDynamic(this, &UPlayerHealth::UpdateRegeneration);
 		StatManager->OnStatChanged.AddDynamic(this, &UPlayerHealth::UpdateHealth);
 		
+	}
+}
+
+void UPlayerHealth::InitBlastResistance()
+{
+	OnPreDamage.AddDynamic(this, &UPlayerHealth::ReduceBlastDamage);
+}
+
+void UPlayerHealth::ReduceBlastDamage(AActor* Attacker, EDamageType DamageType, int& Damage)
+{
+	if (DamageType == EDamageType::EXPLOSIVE)
+	{
+		float Resistance = 0.0f;
+		StatManager->GetStat("BlastResistance",Resistance);
+		Damage = Damage - FMath::FloorToInt(Damage*Resistance);
 	}
 }

@@ -51,16 +51,16 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnBulletHit OnBulletHitDelegate;
 
-	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="Global Settings")
+	UPROPERTY(Replicated,EditAnywhere,BlueprintReadWrite, Category="Global Settings")
 	int MagazineAmmo = 30;
 
-	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="Global Settings")
+	UPROPERTY(Replicated,EditAnywhere,BlueprintReadWrite, Category="Global Settings")
 	int ReserveAmmo = 60;
 
-	UPROPERTY()
+	UPROPERTY(Replicated)
 	int MaxReserveAmmo;
 	
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(Replicated,BlueprintReadWrite)
 	int CurrentAmmo;
 
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="Global Settings")
@@ -103,7 +103,8 @@ public:
 	void RefillAmmo();
 	
 	TObjectPtr<AActor> ShootProjectile(FVector Start);
-
+	
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 private:
 	UPROPERTY()
 	int FiringModeIndex;	

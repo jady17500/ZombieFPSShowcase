@@ -6,7 +6,8 @@
 #include "Components/ActorComponent.h"
 #include "FPSUtils.h"
 #include "GameManagerComponent.generated.h"
-
+class USpawnZoneManagerComponent;
+class AZombieGameState;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRoundStart, int, RoundCount);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRoundEnd, int, RoundCount);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEnemyKilled, AActor*, Killer, EDamageType, DamageType);
@@ -28,6 +29,8 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	
+	UPROPERTY(BlueprintReadOnly)
+	TWeakObjectPtr<AZombieGameState> GameState;
 	
 	UPROPERTY(BlueprintReadWrite)
 	int CurrentRound=1;
@@ -60,9 +63,6 @@ public:
 	float MaxSpawnDelay=2;
 	
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	TArray<AActor*> SpawnPoints;
-	
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	TSubclassOf<AActor> EnemyClass;
 
 	UPROPERTY()
@@ -73,9 +73,6 @@ public:
 	
 	UPROPERTY()
 	FTimerHandle SpawnEnemyTimer;
-	
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	TSubclassOf<AActor> SpawnPointClass;
 	
 	UPROPERTY(BlueprintAssignable)
 	FOnRoundStart OnRoundStart;
@@ -98,6 +95,9 @@ public:
 	//This is to make sure that every drop is dropped before getting a duplicate
 	UPROPERTY()
 	TArray<TSubclassOf<AActor>> RemainingDrops;
+	
+	UPROPERTY()
+	TWeakObjectPtr<USpawnZoneManagerComponent> SpawnZoneManager;
 	
 	UPROPERTY()
 	int DropNumber;

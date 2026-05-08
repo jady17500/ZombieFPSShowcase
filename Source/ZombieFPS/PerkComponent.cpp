@@ -19,9 +19,6 @@ void UPerkComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	PerkStart();
-	PerkStartEvent();
-	// ...
-	
 }
 
 
@@ -30,20 +27,20 @@ void UPerkComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	PerkTick(DeltaTime);
-	PerkTickEvent(DeltaTime);
 	// ...
 }
 
 void UPerkComponent::PerkStart()
 {
-	
+	PerkStartEvent();
 }
 
 void UPerkComponent::PerkRemove()
 {
-	
+	PerkRemoveEvent();
 }
 
 void UPerkComponent::PerkTick(float DeltaSeconds)
 {
+	PerkTickEvent(DeltaSeconds);
 }

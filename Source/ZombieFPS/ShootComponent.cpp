@@ -5,9 +5,12 @@
 
 #include "HealthComponent.h"
 #include "StatManagerComponent.h"
+#include "ZombieMultiplayerController.h"
+#include "ZombieUtilities.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Net/UnrealNetwork.h"
 
 
 // Sets default values for this component's properties
@@ -16,7 +19,7 @@ UShootComponent::UShootComponent()
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-
+	SetIsReplicated(true);
 	// ...
 }
 
@@ -48,7 +51,6 @@ void UShootComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActor
 
 void UShootComponent::Shoot(FVector Start)
 {
-
 	
 	switch (ProjectileType) {
 	case ProjectileType::HITSCAN:
@@ -101,7 +103,8 @@ FHitResult UShootComponent::ShootHitScan(FVector Start)
 	FVector Location;
 	FRotator Rotation;
 	
-	UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetPlayerViewPoint(Location,Rotation);
+	TObjectPtr<AZombieMultiplayerController> PC = Cast<AZombieMultiplayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+	PC->GetPlayerViewPoint(Location,Rotation);
 
 	if (!bShootFromMuzzle)
 		Start = Location;
@@ -126,6 +129,13 @@ FHitResult UShootComponent::ShootHitScan(FVector Start)
 		{
 			float Damage = 0;
 			float DamageMultiplier = 1;
+			float BonusMultiplier = 1;
+			if (!UZombieUtilities::RequestStatFromActor(GetOwner()->GetOwner(), "DamageMultiplier", false, BonusMultiplier))
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, "DamageMultiplier NOT FOUND");
+				BonusMultiplier = 1;
+			}
+			
 			EDamageType DamageType = EDamageType::BODYSHOT;
 			
 			if (GetOwner()->GetComponentByClass<UStatManagerComponent>()->GetStat("Damage", Damage))
@@ -150,7 +160,9 @@ FHitResult UShootComponent::ShootHitScan(FVector Start)
 				}
 				
 				Damage*=DamageMultiplier;
-				Hit.GetActor()->GetComponentByClass<UHealthComponent>()->Damage(FMath::FloorToInt(Damage), UGameplayStatics::GetPlayerPawn(GetWorld(),0), DamageType);
+				Damage*=BonusMultiplier;
+				PC->Server_Damage(Hit.GetActor(), FMath::FloorToInt(Damage), DamageType);
+				//Hit.GetActor()->GetComponentByClass<UHealthComponent>()->Damage(FMath::FloorToInt(Damage), UGameplayStatics::GetPlayerPawn(GetWorld(),0), DamageType);
 			}
 			else
 				GEngine->AddOnScreenDebugMessage(-1,5.0f,FColor::Red, "INVALID DAMAGE CHECK WEAPON STAT MANAGER");
@@ -194,6 +206,15 @@ TObjectPtr<AActor> UShootComponent::ShootProjectile(FVector Start)
 	
 	return Projectile;
 	
+}
+
+void UShootComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UShootComponent, MaxReserveAmmo)
+	DOREPLIFETIME(UShootComponent, CurrentAmmo)
+	DOREPLIFETIME(UShootComponent, ReserveAmmo)
+	DOREPLIFETIME(UShootComponent, MagazineAmmo)
 }
 
 
