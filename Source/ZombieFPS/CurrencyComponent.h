@@ -58,5 +58,16 @@ public:
 	
 	UFUNCTION(BlueprintCallable)
 	virtual bool SpendCurrency(int Amount);
-		
+
+	UFUNCTION(BlueprintCallable, Server, Reliable)
+	virtual void Server_GainCurrency(int Amount);
+	
+	UFUNCTION(BlueprintCallable, NetMulticast, Reliable)
+	virtual void Multicast_GainCurrency(int Amount);
+
+	UFUNCTION(BlueprintCallable, Server, Reliable)
+	virtual void Server_SpendCurrency(int Amount);
+
+	UFUNCTION(BlueprintCallable, Server, Reliable)
+	virtual void Multicast_SpendCurrency(int Amount);
 };

@@ -31,6 +31,40 @@ void UCurrencyComponent::BeginPlay()
 
 void UCurrencyComponent::GainCurrency(int Amount)
 {
+	Server_GainCurrency(Amount);
+}
+
+bool UCurrencyComponent::SpendCurrency(int Amount)
+{
+	if (CurrencyAmount >= Amount)
+	{
+		Server_SpendCurrency(Amount);
+		return true;
+	}
+	return false;
+}
+
+void UCurrencyComponent::Multicast_SpendCurrency_Implementation(int Amount)
+{
+	if (CurrencyAmount >= Amount)
+	{
+		CurrencyAmount -= Amount;
+		OnCurrencySpent.Broadcast(Amount, CurrencyAmount);
+		
+		if (Cast<AZombiePlayerState>(UGameplayStatics::GetPlayerState(GetWorld(),0)))
+			Cast<AZombiePlayerState>(UGameplayStatics::GetPlayerState(GetWorld(),0))->PlayerPoints = CurrencyAmount;
+		
+	}
+
+}
+
+void UCurrencyComponent::Server_SpendCurrency_Implementation(int Amount)
+{
+	Multicast_SpendCurrency(Amount);
+}
+
+void UCurrencyComponent::Multicast_GainCurrency_Implementation(int Amount)
+{
 	float Multiplier =0; 
 	StatManagerComponent->GetStat(CurrencyMultiplierKey, Multiplier);
 	CurrencyAmount += Amount*Multiplier;
@@ -43,18 +77,9 @@ void UCurrencyComponent::GainCurrency(int Amount)
 	OnCurrencyGained.Broadcast(Amount*Multiplier, CurrencyAmount);
 }
 
-bool UCurrencyComponent::SpendCurrency(int Amount)
+void UCurrencyComponent::Server_GainCurrency_Implementation(int Amount)
 {
-	if (CurrencyAmount >= Amount)
-	{
-		CurrencyAmount -= Amount;
-		OnCurrencySpent.Broadcast(Amount, CurrencyAmount);
-		
-		if (Cast<AZombiePlayerState>(UGameplayStatics::GetPlayerState(GetWorld(),0)))
-			Cast<AZombiePlayerState>(UGameplayStatics::GetPlayerState(GetWorld(),0))->PlayerPoints = CurrencyAmount;
-		return true;
-	}
-	return false;
+	Multicast_GainCurrency(Amount);
 }
 
 // Called every frame
