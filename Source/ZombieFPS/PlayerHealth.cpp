@@ -52,6 +52,7 @@ void UPlayerHealth::Multicast_Revive_Implementation()
 {
 	CurrentReviveCharges = 0;
 	bIsDead = false;
+	BleedOutTimer.Invalidate();
 	OnRevive.Broadcast();
 }
 

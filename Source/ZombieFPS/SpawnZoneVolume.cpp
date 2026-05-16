@@ -61,7 +61,7 @@ void ASpawnZoneVolume::CheckForSpawnPoints()
 	FVector Origin = GetActorLocation();
 	FVector Bounds = FVector::ZeroVector;
 	GetActorBounds(false,Origin,Bounds);
-	const TArray<TEnumAsByte<EObjectTypeQuery>>& ObjectTypes = {EObjectTypeQuery::ObjectTypeQuery1};
+	const TArray<TEnumAsByte<EObjectTypeQuery>>& ObjectTypes = {EObjectTypeQuery::ObjectTypeQuery7};
 	TArray<AActor*> ActorToIgnore;
 	UKismetSystemLibrary::BoxOverlapActors(GetWorld(), Origin,Bounds, ObjectTypes, ASpawnPoint::StaticClass(),ActorToIgnore, SpawnPoints);
 }
